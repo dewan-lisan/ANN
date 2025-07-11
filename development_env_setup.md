@@ -7,10 +7,11 @@ http_proxy=http://wss.sebank.se:80
 ```
 ## Install dependencies
 ```shell
-pip config set global.extra-index-url 'https://anonymous@repo7.sebank.se/artifactory/api/pypi/seb-common-pypi/simple'
-pip config set global.trusted-host 'repo7.sebank.se'
+pip3 config set global.extra-index-url 'https://anonymous@repo7.sebank.se/artifactory/api/pypi/seb-common-pypi/simple'
+pip3 config set global.trusted-host 'repo7.sebank.se'
 # yes, i know! pypi.python.org should not be used on prod :)
-pip --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org install -r requirements.txt
+pip3 --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org install -r requirements.txt
+# pip3 freeze > requirements.txt
 ```
 
 ## Intellij GitBash setup
