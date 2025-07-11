@@ -1,0 +1,2 @@
+pycryptodome==3.20.0
+seb-fortanix==1.2.22
