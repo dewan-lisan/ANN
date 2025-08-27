@@ -4,7 +4,7 @@ import vertexai
 import os
 
 # Environment config
-PROJECT_ID = os.environ.get("PROJECT_ID", "graphical-elf-469607-p4")
+PROJECT_ID = os.environ.get("PROJECT_ID", "s86338-cc01fdd6")  # "graphical-elf-469607-p4")
 LOCATION = os.environ.get("GCP_LOCATION", "europe-north1")
 
 vertexai.init(project=PROJECT_ID, location=LOCATION)
@@ -35,6 +35,6 @@ def gen_diet_plan(params):
         print(prompt)
         return response.text
     except Exception as e:
-        #st.error(f"AI error generating diet plan: {str(e)}")
+        # st.error(f"AI error generating diet plan: {str(e)}")
         print(str(e))
         return None

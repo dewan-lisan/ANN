@@ -5,10 +5,34 @@ from planner_vertexai import gen_diet_plan
 
 
 def generate_diet_plan(params: dict):
-    st.subheader("📋 Generated Diet Plan (Preview)")
-    st.json(params)  # For now just show collected inputs
-    gen_diet_plan(params)
+    with st.spinner("🧠 Generating your personalized diet plan..."):
+        diet_plan = gen_diet_plan(json.dumps(params, indent=2))
+        if diet_plan:
+            st.session_state.diet_plan = diet_plan
+            st.success("✅ Diet plan generated successfully!")
+        else:
+            st.error("❌ Failed to generate diet plan. Please try again.")
+    # st.json(params)  # For now just show collected inputs
 
+    if st.session_state.diet_plan:
+        display_diet_plan()
+
+
+def display_diet_plan():
+    if st.session_state.diet_plan:
+        st.subheader("Your Personalized Diet Plan")
+        st.markdown("---")
+        st.markdown(st.session_state.diet_plan)
+    else:
+        st.info("No diet plan generated yet.")
+
+        # Download button
+    st.download_button(
+        label="Download Plan",
+        data=st.session_state.diet_plan,
+        file_name="my_diet_plan.md",
+        mime="text/markdown"
+    )
 
 def next_step():
     st.session_state.step += 1
@@ -20,38 +44,10 @@ def prev_step():
 
 def main():
     # Initialize session state for user inputs
-    if "user_input" not in st.session_state:
-        st.session_state.user_input = {}
 
     if "diet_plan" not in st.session_state:
         st.session_state.diet_plan = None
-
-    st.set_page_config(page_title="Diet Planner Wizard", layout="centered")
     # Custom CSS styling
-    st.markdown("""
-    <style>
-        .stProgress > div > div > div > div {
-            background-color: #4CAF50;
-        }
-        [data-testid="stForm"] {
-            background: #f0f5ff;
-            padding: 20px;
-            border-radius: 10px;
-            border: 1px solid #e6e9ef;
-        }
-        .stButton>button {
-            background-color: #4CAF50;
-            color: white;
-            border-radius: 10px;
-            padding: 8px 16px;
-            border: none;
-            font-weight: bold;
-        }
-        .stButton>button:hover {
-            background-color: #45a049;
-        }
-    </style>
-    """, unsafe_allow_html=True)
 
     # Initialize wizard step tracker
     if "step" not in st.session_state:
@@ -62,6 +58,7 @@ def main():
         st.session_state.inputs = {}
 
     st.title("🥗 Diet Planner Wizard")
+    st.set_page_config(page_title="Diet Planner Wizard", page_icon="🥗", layout="centered")
 
     # ---- Step 1: Demographics + Goals (Mandatory) ----
     if st.session_state.step == 1:
