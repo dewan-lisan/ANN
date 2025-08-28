@@ -1,64 +1,60 @@
 import json
 import streamlit as st
-from planner_vertexai import gen_diet_plan
-from eval import evaluate_diet
 import pandas as pd
 import altair as alt
 import plotly.express as px
+from planner_vertexai import gen_diet_plan
+from eval import evaluate_diet
 
 
-def display_compliance_matrix(compliance_df: pd.DataFrame):
-    comp = compliance_df.melt(id_vars="day", var_name="nutrient", value_name="ok")
-
-    chart = (
-        alt.Chart(comp)
-        .mark_rect()
-        .encode(
-            x="nutrient:N",
-            y="day:N",
-            color=alt.condition("datum.ok == 1", alt.value("green"), alt.value("red")),
-            tooltip=["day", "nutrient", "ok"]
-        )
-        .properties(width=500, height=300, title="Diet Plan Compliance Matrix")
+def display_compliance_matrix(compliance_df):
+    comp = compliance_df.melt(id_vars="day", var_name="Nutrient", value_name="Compliance")
+    chart = alt.Chart(comp).mark_rect().encode(
+        x=alt.X("Nutrient:N", title="Nutrient"),
+        y=alt.Y("day:N", title="Day"),
+        color=alt.Color(
+            "Compliance:N",
+            scale=alt.Scale(domain=[True, False], range=["#2ecc71", "#e74c3c"]),
+            legend=alt.Legend(title="Compliance")
+        ),
+        tooltip=["day", "Nutrient", "Compliance"]
+    ).properties(
+        width=600,
+        height=400,
+        title="Diet Plan Compliance Matrix"
+    ).configure_axis(
+        labelFontSize=12,
+        titleFontSize=14
+    ).configure_title(
+        fontSize=16,
+        anchor="middle"
     )
     st.altair_chart(chart, use_container_width=True)
 
 
+# todo: improve radar chart select day bug fix
 def display_radar_chart(day_row):
     labels = ["Protein %", "Carbs %", "Fat %", "Fiber", "Sugar %", "Sodium"]
     kcal = day_row["calories"]
-
     values = [
-        (day_row["protein"]*4)/kcal,
-        (day_row["carbs"]*4)/kcal,
-        (day_row["fat"]*9)/kcal,
-        day_row["fiber"]/30,
-        (day_row["sugar"]*4)/kcal,
-        day_row["sodium"]/2300,
-        ]
-
+        (day_row["protein"] * 4) / kcal,
+        (day_row["carbs"] * 4) / kcal,
+        (day_row["fat"] * 9) / kcal,
+        day_row["fiber"] / 30,
+        (day_row["sugar"] * 4) / kcal,
+        day_row["sodium"] / 2300,
+    ]
     df_radar = pd.DataFrame({"Nutrient": labels, "Value": values})
     fig = px.line_polar(df_radar, r="Value", theta="Nutrient", line_close=True)
     fig.update_traces(fill="toself")
     st.plotly_chart(fig, use_container_width=True)
 
 
-def parse_diet_plan(json_str: str):
-    """Parse JSON string into DataFrame with daily totals."""
+def parse_diet_plan(json_str):
     plan = json.loads(json_str)
     days = plan["diet_plan"]["days"]
-
-    # Extract daily totals
-    daily_data = []
-    for day in days:
-        totals = day["daily_totals"]
-        daily_data.append({
-            "day": day["day"],
-            **totals
-        })
-
-    df = pd.DataFrame(daily_data)
-    return plan, df
+    daily_data = [{"day": day["day"], **day["daily_totals"]} for day in days]
+    return plan, pd.DataFrame(daily_data)
 
 
 def generate_diet_plan(params: dict):
@@ -73,20 +69,15 @@ def generate_diet_plan(params: dict):
     if st.session_state.diet_plan:
         display_diet_plan()
         df = parse_diet_plan(st.session_state.diet_plan)[1]
-        display_diet_plan_table(df)
         display_compliance(df)
-
 
 
 def display_diet_plan():
     if st.session_state.diet_plan:
         st.subheader("Your Personalized Diet Plan")
-        st.markdown("---")
         st.json(st.session_state.diet_plan, expanded=False)
     else:
         st.info("No diet plan generated yet.")
-
-        # Download button
     st.download_button(
         label="Download Plan",
         data=st.session_state.diet_plan,
@@ -95,41 +86,24 @@ def display_diet_plan():
     )
 
 
-def display_diet_plan_table(df: pd.DataFrame):
-    if st.session_state.diet_plan:
-        st.subheader("Daily Nutritional Summary")
-        st.dataframe(df.set_index("day"))
-
-        # Download CSV button
-        csv = df.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="Download Daily Summary CSV",
-            data=csv,
-            file_name="daily_nutritional_summary.csv",
-            mime="text/csv"
-        )
-    else:
-        st.info("No diet plan generated yet.")
-
-
-def display_compliance(df: pd.DataFrame):
+def display_compliance(df):
     compliance = evaluate_diet(df)
     st.subheader("📊 Daily Nutrient Totals")
-    st.dataframe(df)
-
+    st.dataframe(df.set_index("day"))
     st.subheader("✅ Compliance Validation")
-    st.dataframe(compliance)
-
-    # Compliance heatmap
+    st.dataframe(compliance.set_index("day"))
     display_compliance_matrix(compliance)
-    # Radar chart selector
-    st.subheader("📈 Nutrient Balance per Day")
-    day_choice = st.selectbox("Select day", df["day"].tolist())
-    day_row = df[df["day"] == day_choice].iloc[0]
-    display_radar_chart(day_row)
+    # Store the selected day in session state
+    if "selected_day" not in st.session_state:
+        st.session_state.selected_day = df["day"].iloc[0]  # Default to the first day
+
+    st.session_state.selected_day = st.selectbox(
+        "Select day", df["day"].tolist(), index=df["day"].tolist().index(st.session_state.selected_day)
+    )
+    display_radar_chart(df[df["day"] == st.session_state.selected_day].iloc[0])
 
 
-def store_diet_plan(plan: str):
+def store_diet_plan(plan):
     st.session_state.diet_plan = plan
 
 
