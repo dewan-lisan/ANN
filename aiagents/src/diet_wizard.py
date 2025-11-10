@@ -32,7 +32,7 @@ def display_compliance_matrix(compliance_df):
     st.altair_chart(chart, use_container_width=True)
 
 
-# todo: improve radar chart select day bug fix
+# todo: improve radar chart select day bug fix, but the main idea is here
 def display_radar_chart(day_row):
     labels = ["Protein %", "Carbs %", "Fat %", "Fiber", "Sugar %", "Sodium"]
     kcal = day_row["calories"]
